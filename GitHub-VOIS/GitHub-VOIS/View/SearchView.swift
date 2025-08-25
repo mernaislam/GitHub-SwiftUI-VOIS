@@ -97,6 +97,7 @@ struct SearchBar: View {
                 Button(action: {
                     searchText = ""
                     viewModel.users = nil
+                    hideKeyboard()
                 }) {
                     Image(systemName: "xmark")
                         .foregroundColor(.white.opacity(0.5))
@@ -104,6 +105,7 @@ struct SearchBar: View {
             }
 
             Button(action: {
+                hideKeyboard()
                 viewModel.fetchUsers(username: searchText)
             }) {
                 Text("Go")
@@ -177,3 +179,13 @@ struct BackgroundView: View {
         }
     }
 }
+
+// MARK: Hide Keyboard
+#if canImport(UIKit)
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                        to: nil, from: nil, for: nil)
+    }
+}
+#endif
