@@ -8,7 +8,7 @@
 import Foundation
 
 struct UserList: Codable {
-    let users: [User]
+    var users: [User]
     let totalCount: Int
     
     enum CodingKeys: String, CodingKey {

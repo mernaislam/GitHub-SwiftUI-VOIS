@@ -9,27 +9,22 @@ import SwiftUI
 
 struct SearchView: View {
     @State var searchText: String
-    @State var users: UserList?
+    @StateObject var viewModel = SearchViewModel()
     
     var body: some View {
         NavigationView {
             ZStack {
-                BackgroundView(users: users)
-                ForegroundView(searchText: $searchText, users: $users)
+                BackgroundView(viewModel: viewModel)
+                ForegroundView(searchText: $searchText, viewModel: viewModel)
             }
             .ignoresSafeArea()
         }
     }
 }
 
-#Preview {
-    SearchView(searchText: "name")
-}
-
 struct ForegroundView: View {
     @Binding var searchText: String
-    @StateObject var viewModel = SearchViewModel()
-    @Binding var users: UserList?
+    @ObservedObject var viewModel: SearchViewModel
 
     var body: some View {
         VStack {
@@ -44,22 +39,13 @@ struct ForegroundView: View {
                     .textInputAutocapitalization(.never)
                     .submitLabel(.go)
                     .onSubmit {
-                        viewModel.searchUsers(username: searchText) { response in
-                            switch response {
-                                case .success(let users):
-                                    DispatchQueue.main.async {
-                                        self.users = users
-                                    }
-                                case .failure(let error):
-                                    print(error)
-                            }
-                        }
+                        viewModel.fetchUsers(username: searchText)
                     }
                 
                 if !searchText.isEmpty {
                     Button(action: { 
                         searchText = ""
-                        users = nil
+                        viewModel.users = nil
                     }) {
                         Image(systemName: "xmark")
                             .foregroundColor(.white.opacity(0.5))
@@ -71,8 +57,8 @@ struct ForegroundView: View {
             .cornerRadius(20)
             .padding(.horizontal, 20)
             
-            if let users = users?.users {
-                SearchResults(users: users)
+            if (viewModel.users?.users) != nil {
+                SearchResultsView(viewModel: viewModel)
             } else {
                 VStack {
                     Spacer()
@@ -91,78 +77,72 @@ struct ForegroundView: View {
                     Spacer()
                 }
             }
-            
-            
-            
         }
         .padding(.top, 80)
+        .alert(isPresented: Binding<Bool>(
+            get: { viewModel.errorMessage != nil },
+            set: { _ in viewModel.errorMessage = nil }
+        )) {
+            Alert(
+                title: Text("Error"),
+                message: Text(viewModel.errorMessage ?? ""),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+
     }
 }
 
 struct BackgroundView: View {
-    var users: UserList?
+    @ObservedObject var viewModel: SearchViewModel
     @State private var isRotating = false
     
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                Image("background")
+                Image("bg-addon1")
                     .resizable()
-                    .scaledToFill()
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .clipped()
-                    .ignoresSafeArea()
+                    .frame(width: 150, height: 350)
+                    .offset(
+                        x: -(geo.size.width * 0.3),
+                        y: -(geo.size.height * 0.22)
+                    )
+                    .opacity(viewModel.users == nil ? 1 : 0)
                 
-                Image("bg-addon5")
+                Image("bg-addon2")
                     .resizable()
-                    .scaledToFit()
+                    .frame(width: 150, height: 108)
+                    .offset(
+                        x: (geo.size.width * 0.2),
+                        y: -(geo.size.height * 0.2)
+                    )
+                    .opacity(viewModel.users == nil ? 1 : 0)
+                
+                
+                Image("bg-addon3")
+                    .resizable()
+                    .frame(width: 300, height: 300)
+                    .rotationEffect(.degrees(isRotating ? 360 : 0))
+                    .animation(
+                        .linear(duration: 20).repeatForever(autoreverses: false),
+                        value: isRotating
+                    )
+                    .offset(y: geo.size.height * 0.3)
+                    .opacity(viewModel.users == nil ? 1 : 0)
+                    .onAppear {
+                        isRotating = true
+                    }
+                    
+                
+                Image("bg-addon4")
+                    .resizable()
+                    .frame(width: 150, height: 150)
                     .offset(y: geo.size.height * 0.4)
-                
-                Image("bg-addon5")
-                    .resizable()
-                    .scaledToFit()
-                    .offset(y: geo.size.height * 0)
-                
-                if users == nil {
-                    Image("bg-addon1")
-                        .resizable()
-                        .frame(width: 150, height: 350)
-                        .offset(
-                            x: -(geo.size.width * 0.3),
-                            y: -(geo.size.height * 0.22)
-                        )
-                    
-                    Image("bg-addon2")
-                        .resizable()
-                        .frame(width: 150, height: 108)
-                        .offset(
-                            x: (geo.size.width * 0.2),
-                            y: -(geo.size.height * 0.2)
-                        )
-                    
-                    
-                    Image("bg-addon3")
-                        .resizable()
-                        .frame(width: 300, height: 300)
-                        .rotationEffect(.degrees(isRotating ? 360 : 0))
-                        .animation(
-                            .linear(duration: 20).repeatForever(autoreverses: false),
-                            value: isRotating
-                        )
-                        .offset(y: geo.size.height * 0.3)
-                        .onAppear {
-                            isRotating = true
-                        }
-                        
-                    
-                    Image("bg-addon4")
-                        .resizable()
-                        .frame(width: 150, height: 150)
-                        .offset(y: geo.size.height * 0.4)
-                }
+                    .opacity(viewModel.users == nil ? 1 : 0)
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()
+            .withStaticBackground()
         }
     }
 }
