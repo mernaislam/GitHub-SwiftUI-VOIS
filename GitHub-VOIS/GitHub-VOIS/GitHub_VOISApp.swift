@@ -11,7 +11,7 @@ import SwiftUI
 struct GitHub_VOISApp: App {
     var body: some Scene {
         WindowGroup {
-            SearchView(searchText: "mernaislam")
+            SearchView(searchText: "")
         }
     }
 }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// MARK: - SearchView
 struct SearchView: View {
     @State var searchText: String
     @StateObject var viewModel = SearchViewModel()
@@ -22,60 +23,18 @@ struct SearchView: View {
     }
 }
 
+// MARK: Foreground View Details
 struct ForegroundView: View {
     @Binding var searchText: String
     @ObservedObject var viewModel: SearchViewModel
 
     var body: some View {
         VStack {
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.white.opacity(0.5))
-                
-                TextField(Constants.Texts.searchPlaceholder, text: $searchText)
-                    .foregroundStyle(.white)
-                    .fontWeight(.bold)
-                    .disableAutocorrection(true)
-                    .textInputAutocapitalization(.never)
-                    .submitLabel(.go)
-                    .onSubmit {
-                        viewModel.fetchUsers(username: searchText)
-                    }
-                
-                if !searchText.isEmpty {
-                    Button(action: { 
-                        searchText = ""
-                        viewModel.users = nil
-                    }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.white.opacity(0.5))
-                    }
-                }
-            }
-            .padding()
-            .background(Color("primary").opacity(0.5))
-            .cornerRadius(20)
-            .padding(.horizontal, 20)
-            
+            SearchBar(searchText: $searchText, viewModel: viewModel)
             if (viewModel.users?.users) != nil {
                 SearchResultsView(viewModel: viewModel)
             } else {
-                VStack {
-                    Spacer()
-                    Text(Constants.Texts.title)
-                        .foregroundStyle(.white)
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .padding(.horizontal, 20)
-                    
-                    Text(Constants.Texts.subtitle)
-                        .foregroundStyle(.white.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 10)
-                        .padding(.bottom, 60)
-                    Spacer()
-                }
+                HomeScreenBody()
             }
         }
         .padding(.top, 80)
@@ -93,6 +52,78 @@ struct ForegroundView: View {
     }
 }
 
+// MARK: Home Screen Body
+struct HomeScreenBody: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            Text(Constants.Texts.title)
+                .foregroundStyle(.white)
+                .font(.title)
+                .fontWeight(.bold)
+                .padding(.horizontal, 20)
+            
+            Text(Constants.Texts.subtitle)
+                .foregroundStyle(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 60)
+            Spacer()
+        }
+    }
+}
+
+// MARK: SearchBar View
+struct SearchBar: View {
+    @Binding var searchText: String
+    @ObservedObject var viewModel: SearchViewModel
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.white.opacity(0.5))
+            
+            TextField(Constants.Texts.searchPlaceholder, text: $searchText)
+                .foregroundStyle(.white)
+                .fontWeight(.bold)
+                .disableAutocorrection(true)
+                .textInputAutocapitalization(.never)
+                .submitLabel(.go)
+                .onSubmit {
+                    viewModel.fetchUsers(username: searchText)
+                }
+            if !searchText.isEmpty {
+                Button(action: {
+                    searchText = ""
+                    viewModel.users = nil
+                }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+
+            Button(action: {
+                viewModel.fetchUsers(username: searchText)
+            }) {
+                Text("Go")
+                    .foregroundColor(Color("primary"))
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white)
+                    .cornerRadius(12)
+            }
+            .disabled(searchText.isEmpty)
+        }
+        .padding()
+        .background(Color("primary").opacity(0.5))
+        .cornerRadius(20)
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: Background View
 struct BackgroundView: View {
     @ObservedObject var viewModel: SearchViewModel
     @State private var isRotating = false
