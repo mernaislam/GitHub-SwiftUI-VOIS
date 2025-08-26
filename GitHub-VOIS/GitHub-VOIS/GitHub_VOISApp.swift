@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct GitHub_VOISApp: App {
+    @State private var showSplash = true
     var body: some Scene {
         WindowGroup {
-            SearchView(searchText: "")
+            if showSplash {
+                LaunchScreen(isActive: $showSplash)
+            } else {
+                SearchView(searchText: "")
+            }
         }
     }
 }

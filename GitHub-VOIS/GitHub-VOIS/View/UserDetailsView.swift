@@ -6,14 +6,40 @@
 //
 
 import SwiftUI
+import SafariServices
+import UIKit
 
 // MARK: User Details View
 struct UserDetailsView: View {
     @StateObject private var viewModel: UserDetailsViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedURL: URL? = nil
+    @State private var sortOption: RepoSortOption = .updatedDesc
     
     init(username: String) {
         _viewModel = StateObject(wrappedValue: UserDetailsViewModel(username: username))
+    }
+    
+    // MARK: - Sorting
+    private enum RepoSortOption: String, CaseIterable, Identifiable {
+        case updatedDesc = "Updated"
+        case nameAsc = "Name"
+        var id: String { rawValue }
+    }
+    
+    private var sortedRepos: [UserRepo]? {
+        guard let repos = viewModel.userRepos else { return nil }
+        switch sortOption {
+        case .updatedDesc:
+            let formatter = ISO8601DateFormatter()
+            return repos.sorted { lhs, rhs in
+                let l = formatter.date(from: lhs.updatedAt) ?? .distantPast
+                let r = formatter.date(from: rhs.updatedAt) ?? .distantPast
+                return l > r
+            }
+        case .nameAsc:
+            return repos.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
     }
     
     var body: some View {
@@ -26,6 +52,7 @@ struct UserDetailsView: View {
                     followersSection
                     divider
                     reposHeader
+                    sortControl
                     reposSection
                 }
                 .padding()
@@ -41,6 +68,15 @@ struct UserDetailsView: View {
                             .font(.title3)
                     }
                 }
+            }
+        }
+        .sheet(isPresented: Binding<Bool>(
+            get: { selectedURL != nil },
+            set: { if !$0 { selectedURL = nil } }
+        )) {
+            if let url = selectedURL {
+                SafariView(url: url)
+                    .ignoresSafeArea()
             }
         }
         .alert(isPresented: Binding<Bool>(
@@ -91,17 +127,39 @@ struct UserDetailsView: View {
     }
     
     private var followersSection: some View {
-        HStack {
+        HStack(spacing: 6) {
             Image(systemName: "person.2")
                 .foregroundStyle(.white.opacity(0.6))
-            Text("\(viewModel.user?.followers ?? 0)")
-                .foregroundStyle(.white)
-            Text("followers . ")
+            Button {
+                if let username = viewModel.user?.username,
+                   let url = URL(string: "https://github.com/\(username)?tab=followers") {
+                    selectedURL = url
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text("\(viewModel.user?.followers ?? 0)")
+                        .foregroundStyle(.white)
+                    Text("followers")
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            .buttonStyle(.plain)
+            Text("·")
                 .foregroundStyle(.white.opacity(0.6))
-            Text("\(viewModel.user?.following ?? 0)")
-                .foregroundStyle(.white)
-            Text("following")
-                .foregroundStyle(.white.opacity(0.6))
+            Button {
+                if let username = viewModel.user?.username,
+                   let url = URL(string: "https://github.com/\(username)?tab=following") {
+                    selectedURL = url
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text("\(viewModel.user?.following ?? 0)")
+                        .foregroundStyle(.white)
+                    Text("following")
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            .buttonStyle(.plain)
         }
     }
     
@@ -112,7 +170,7 @@ struct UserDetailsView: View {
     
     private var reposHeader: some View {
         HStack {
-            Text("Repository")
+            Text("Repositories")
                 .foregroundStyle(.white)
                 .font(.title)
             Spacer()
@@ -124,7 +182,7 @@ struct UserDetailsView: View {
     
     private var reposSection: some View {
         Group {
-            if let repos = viewModel.userRepos {
+            if let repos = sortedRepos {
                 if repos.isEmpty {
                     Text("No repositories available")
                         .foregroundStyle(.white.opacity(0.6))
@@ -145,6 +203,15 @@ struct UserDetailsView: View {
                     .padding(.top, 10)
             }
         }
+    }
+
+    private var sortControl: some View {
+        Picker("Sort", selection: $sortOption) {
+            ForEach(RepoSortOption.allCases) { option in
+                Text(option.rawValue).tag(option)
+            }
+        }
+        .pickerStyle(.segmented)
     }
     
     // MARK: - Components
@@ -181,6 +248,16 @@ struct UserDetailsView: View {
                 Text("Updated: \(repo.updatedAt.prefix(10))")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.6))
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let username = viewModel.user?.username,
+               let url = URL(string: "https://github.com/\(username)/\(repo.name)") {
+                selectedURL = url
             }
         }
         .padding()
@@ -192,6 +269,7 @@ struct UserDetailsView: View {
 // MARK: User Details Row
 private struct UserDetailsRow: View {
     let user: UserDetails?
+    @State private var isShowingSafari: Bool = false
 
     var body: some View {
         HStack (spacing: 20){
@@ -223,7 +301,65 @@ private struct UserDetailsRow: View {
                     .foregroundStyle(.white.opacity(0.5))
                     .font(.title3)
             }
+            Spacer()
+            Button(action: { isShowingSafari = true }) {
+                Image(systemName: "arrow.up.forward.app")
+                    .foregroundStyle(.white)
+                    .font(.title)
+            }
+            .disabled(githubURL == nil)
         }
+        .sheet(isPresented: $isShowingSafari) {
+            if let url = githubURL {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
+        }
+        .contextMenu {
+            if let url = githubURL {
+                ShareLink(item: url) {
+                    Label("Share Profile", systemImage: "square.and.arrow.up")
+                }
+                Button {
+                    UIPasteboard.general.url = url
+                } label: {
+                    Label("Copy Profile URL", systemImage: "doc.on.doc")
+                }
+                Button {
+                    let scheme = "github://user?login=\(user?.username ?? "")"
+                    if let appURL = URL(string: scheme), UIApplication.shared.canOpenURL(appURL) {
+                        UIApplication.shared.open(appURL)
+                    } else {
+                        if let webURL = githubURL {
+                            UIApplication.shared.open(webURL)
+                        }
+                    }
+                } label: {
+                    Label("Open in GitHub App", systemImage: "app")
+                }
+            }
+        }
+    }
+
+    private var githubURL: URL? {
+        guard let username = user?.username else { return nil }
+        return URL(string: "https://github.com/\(username)")
+    }
+}
+
+// MARK: Safari Wrapper
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let controller = SFSafariViewController(url: url)
+        controller.preferredBarTintColor = .black
+        controller.preferredControlTintColor = .white
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {
+        // no-op
     }
 }
 
