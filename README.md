@@ -48,6 +48,32 @@ GitHub-VOIS/
 2. Select an iOS Simulator (or your device) and build/run.
 3. No API keys are required. The app uses public GitHub endpoints.
 
+### Screenshots
+#### Search Screen
+<img src="https://github.com/user-attachments/assets/e39e4ce8-0771-41b5-b2a7-1d32050f1614" width="200" />
+
+
+
+#### Search Results Screen
+<img width="200" height="500" alt="Simulator Screenshot - iPhone 16 - 2025-08-26 at 13 22 45" src="https://github.com/user-attachments/assets/57121d2b-8c5d-4be9-91f9-c84987cb8335" />
+
+
+
+#### User Details Screen
+<img width="200" height="500" alt="Simulator Screenshot - iPhone 16 - 2025-08-26 at 13 23 58" src="https://github.com/user-attachments/assets/b491498a-ee3e-48ee-a5ca-d83c1224f2b8" />
+
+
+
+#### Share, Copy and Open
+<img width="200" height="500" alt="Simulator Screenshot - iPhone 16 - 2025-08-26 at 13 25 10" src="https://github.com/user-attachments/assets/e79f2e10-2aab-4325-9360-789be685fdd2" />
+
+
+
+#### Web View
+<img width="200" height="500" alt="Simulator Screenshot - iPhone 16 - 2025-08-26 at 13 24 52" src="https://github.com/user-attachments/assets/959a5ba8-46dd-477d-bada-4478735b979d" />
+<img width="200" height="500" alt="Simulator Screenshot - iPhone 16 - 2025-08-26 at 13 26 18" src="https://github.com/user-attachments/assets/90c551f1-77aa-4d93-a9b5-2d94692de69d" />
+
+
 ### Usage Guide
 - From the search screen, type a username and select a result.
 - In the details screen:
@@ -56,10 +82,5 @@ GitHub-VOIS/
   - Tap Followers/Following to view those pages in‑app.
   - Change repo sorting using the segmented control (Updated or Name).
   - Tap a repository to open it in‑app.
-
-### Notes & Decisions
-- Background visuals are implemented via `withStaticBackground()` in `View+Background.swift`.
-- In‑app navigation to GitHub content uses `SFSafariViewController` (SafariView wrapper) for privacy and performance.
-- UI colors prefer system‑aware styles for dark/light compatibility.
 
 
